@@ -48,7 +48,7 @@
                 <artifactId>exec-maven-plugin</artifactId>
                 <version>3.3.0</version>
                 <configuration>
-                    <mainClass>com.example.crawler.SimpleCrawler</mainClass>
+                    <mainClass>com.nedyalkova.crawler.CrawlerMain</mainClass>
                 </configuration>
             </plugin>
         </plugins>
