@@ -18,7 +18,6 @@ public class WebCrawler {
 
   public WebCrawler(String seedUrl) throws URISyntaxException {
     log.info("Creating a WebCrawler with seedUrl: {}", seedUrl);
-    this.seedUrl = seedUrl;
     this.seedHost = new URI(seedUrl).getHost();
     if (StringUtils.isBlank(seedHost)) {
       throw new URISyntaxException(seedUrl, "Unable to determine host", 0);
@@ -28,16 +27,20 @@ public class WebCrawler {
     log.info("Added the seedUrl to the queue");
   }
 
-  private final String seedUrl;
   private final String seedHost;
 
   private Set<String> visited = new HashSet<>();
   private final Queue<String> queue = new LinkedList<>();
 
+  private final HTMLFetcher htmlFetcher = new HTMLFetcher();
+  private final LinkExtractor linkExtractor = new LinkExtractor();
+  int counter = 0;
+
   public void crawl() {
     while (!queue.isEmpty()) {
-      log.info("QUEUE LENGTH: {}", queue.size());
+      log.debug("QUEUE LENGTH: {}, DONE {}", queue.size(), counter);
       String nextUrl = queue.poll();
+      counter++;
       crawlUrl(nextUrl);
     }
   }
@@ -46,31 +49,53 @@ public class WebCrawler {
     try {
       log.info("CRAWL {}", nextUrl);
       validateUrl(nextUrl);
-      String html = HTMLFetcher.fetchHTML(nextUrl);
-      Set<String> linksFromPage = LinkExtractor.extractLinks(html, nextUrl);
-      log.info("Extracted links: {}", linksFromPage);
-      queue.addAll(linksFromPage);
+      String html = htmlFetcher.fetchHTML(nextUrl);
+      Set<String> linksFromPage = linkExtractor.extractLinks(html, nextUrl);
+      log.debug("Extracted links: {}", linksFromPage);
+      addLinksToQueue(linksFromPage);
+      visited.add(nextUrl);
     } catch (UrlInvalidException e) {
-      log.error("URL is invalid, skipping");
+      log.error("URL {} is invalid, skipping", nextUrl);
     } catch (IOException e) {
-      log.error("Unable to connect to the url {}, {}", nextUrl, e.getMessage(), e);
+      log.debug("Unable to connect to the url {}, {}", nextUrl, e.getMessage(), e);
     }
+  }
+
+  private void addLinksToQueue(Set<String> linksFromPage) {
+    linksFromPage.forEach(
+        link -> {
+          try {
+            validateUrl(link);
+            queue.add(link);
+          } catch (UrlInvalidException e) {
+            log.debug("Not adding {} to the queue", link);
+          }
+        });
   }
 
   private void validateUrl(String url) throws UrlInvalidException {
     try {
       URI uri = new URI(url);
-      if (!(hasNotBeenVisitedBefore(uri) && isSameDomainAsSeed(uri))) {
-        throw new UrlInvalidException();
+      String scheme = uri.getScheme();
+
+      if (!(scheme != null && Set.of("http", "https").contains(scheme.toLowerCase()))) {
+        throw new UrlInvalidException("Unexpected protocol");
+      }
+      if (!isSameDomainAsSeed(uri)) {
+        throw new UrlInvalidException("Different domain");
+      }
+      if (!hasNotBeenVisitedBefore(uri)) {
+        throw new UrlInvalidException("Visited before");
       }
     } catch (URISyntaxException e) {
-      throw new UrlInvalidException();
+      throw new UrlInvalidException("Invalid URL");
     }
   }
 
   private boolean isSameDomainAsSeed(URI uri) {
     String host = uri.getHost();
-    return StringUtils.isNotBlank(host) && host.equalsIgnoreCase(this.seedHost);
+    return StringUtils.isNotBlank(host)
+        && (host.equalsIgnoreCase(this.seedHost) || host.endsWith("." + this.seedHost));
   }
 
   private boolean hasNotBeenVisitedBefore(URI uri) throws URISyntaxException {
