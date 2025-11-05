@@ -1,7 +1,9 @@
 package com.nedyalkova.crawler.impl;
 
+import com.nedyalkova.crawler.exception.UrlInvalidException;
 import org.junit.jupiter.api.Test;
 
+import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.Set;
 
@@ -20,20 +22,19 @@ class WebCrawlerTest {
   }
 
   @Test
-  void createCrawler_whenUrlValid_itIsAddedToTheQueue() throws URISyntaxException {
+  void createCrawler_whenUrlValid_itIsAddedToTheQueue() throws URISyntaxException, UrlInvalidException {
     WebCrawler webCrawler = new WebCrawler("https://google.com");
     assertEquals(1, webCrawler.getQueue().size());
-    assertEquals("https://google.com", webCrawler.getQueue().peek());
+    URI fromTheQueue = webCrawler.getQueue().peek();
+    assertNotNull(fromTheQueue);
+    assertEquals("https://google.com", fromTheQueue.toString());
   }
 
   @Test
-  void crawl_whenUrlVisitedBefore_itIsSkipped() throws URISyntaxException {
-    WebCrawler webCrawler = new WebCrawler("https://google.com");
-    webCrawler.setVisited(Set.of("https://google.com"));
-
-    webCrawler.crawl();
-
-  // TODO add assertions
+  void isSameDomainAsSeed_whenDifferentFirstPart_thenFalse() throws UrlInvalidException, URISyntaxException {
+    WebCrawler crawler = new WebCrawler("https://google.com");
+    assertFalse(crawler.isSameDomainAsSeed(new URI("abc.google.com")));
+    assertFalse(crawler.isSameDomainAsSeed(new URI("facebook.com")));
   }
 
 

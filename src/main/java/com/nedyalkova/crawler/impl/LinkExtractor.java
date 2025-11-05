@@ -18,6 +18,9 @@ public class LinkExtractor {
   Logger log = LoggerFactory.getLogger(LinkExtractor.class);
 
   public Set<String> extractLinks(String html, String baseUrl) {
+    if (StringUtils.isBlank(html)){
+      return new HashSet<>();
+    }
     Document doc = Jsoup.parse(html, baseUrl);
     Elements hRefs = doc.select("a[href]");
     if (CollectionUtils.isEmpty(hRefs)) {
