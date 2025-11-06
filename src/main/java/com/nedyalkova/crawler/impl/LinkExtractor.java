@@ -1,5 +1,6 @@
 package com.nedyalkova.crawler.impl;
 
+import com.nedyalkova.crawler.exception.UrlInvalidException;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.jsoup.Jsoup;
@@ -17,8 +18,10 @@ import java.util.Set;
 public class LinkExtractor {
   Logger log = LoggerFactory.getLogger(LinkExtractor.class);
 
-  public Set<String> extractLinks(String html, String baseUrl) {
-    if (StringUtils.isBlank(html)){
+  private final URLUtils urlUtils = new URLUtils();
+
+  public Set<URI> extractLinks(String html, String baseUrl) {
+    if (StringUtils.isBlank(html)) {
       return new HashSet<>();
     }
     Document doc = Jsoup.parse(html, baseUrl);
@@ -26,20 +29,19 @@ public class LinkExtractor {
     if (CollectionUtils.isEmpty(hRefs)) {
       return new HashSet<>();
     }
-    Set<String> linksOnThisPage = new HashSet<>();
+    Set<URI> linksOnThisPage = new HashSet<>();
     for (Element hRef : hRefs) {
-      String hrefAbsoluteUrl = hRef.absUrl("href").trim();
-      if (StringUtils.isBlank(hrefAbsoluteUrl)){
-        continue;
-      }
       try {
-        URI uri = new URI(hrefAbsoluteUrl);
-        URI normalized =
-            new URI(uri.getScheme(), uri.getAuthority(), uri.getPath(), uri.getQuery(), null);
-        // this removes sections, like #segment and helps avoid duplication
-        linksOnThisPage.add(normalized.toString());
-      } catch (URISyntaxException e) {
-        log.debug("Invalid link {} will not be returned", hrefAbsoluteUrl);
+        String hrefAbsoluteUrl = hRef.absUrl("href").trim();
+        if (StringUtils.isBlank(hrefAbsoluteUrl)) {
+          continue;
+        }
+        URI normalized = urlUtils.normalizeUrl(hrefAbsoluteUrl);
+        urlUtils.validateScheme(normalized.getScheme());
+        log.debug("Adding to queue: {}", normalized);
+        linksOnThisPage.add(normalized);
+      } catch (UrlInvalidException | URISyntaxException e) {
+
       }
     }
     return linksOnThisPage;

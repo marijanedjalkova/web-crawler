@@ -17,25 +17,26 @@ public class WebCrawler {
   private static final Logger log = LoggerFactory.getLogger(WebCrawler.class);
 
   public WebCrawler(String seedUrl) throws URISyntaxException, UrlInvalidException {
-    log.info("Creating a WebCrawler with seedUrl: {}", seedUrl);
-    URI seedUri = new URI(seedUrl);
+    log.debug("Creating a WebCrawler with seedUrl: {}", seedUrl);
+    URI seedUri = urlUtils.normalizeUrl(seedUrl);
     this.seedHost = seedUri.getHost();
     if (StringUtils.isBlank(seedHost)) {
       throw new URISyntaxException(seedUrl, "Unable to determine host", 0);
     }
-    validateUrl(seedUrl);
-    log.info("Setting host to {}", this.seedHost);
+    log.debug("Setting host to {}", this.seedHost);
+    validateUrl(seedUri);
     queue.add(seedUri);
-    log.info("Added the seedUrl to the queue");
+    log.debug("Added the seedUrl to the queue");
   }
 
   private final String seedHost;
 
-  private Set<URI> visited = new HashSet<>();
+  private final Set<URI> visited = new HashSet<>();
   private final Queue<URI> queue = new LinkedList<>();
 
   private final HTMLFetcher htmlFetcher = new HTMLFetcher();
   private final LinkExtractor linkExtractor = new LinkExtractor();
+  private final URLUtils urlUtils = new URLUtils();
   int counter = 0;
 
   public void crawl() {
@@ -52,7 +53,7 @@ public class WebCrawler {
       log.info("CRAWL {}", nextUrl);
       validateUrl(nextUrl);
       String html = htmlFetcher.fetchHTML(nextUrl.toString());
-      Set<String> linksFromPage = linkExtractor.extractLinks(html, nextUrl.toString());
+      Set<URI> linksFromPage = linkExtractor.extractLinks(html, nextUrl.toString());
       log.debug("Extracted links: {}", linksFromPage);
       addLinksToQueue(linksFromPage);
       visited.add(nextUrl);
@@ -63,41 +64,27 @@ public class WebCrawler {
     }
   }
 
-  private void addLinksToQueue(Set<String> linksFromPage) {
+  private void addLinksToQueue(Set<URI> linksFromPage) {
     linksFromPage.forEach(
-        link -> {
+        uri -> {
           try {
-            validateUrl(link);
-            URI uri = normalizeUrl(link);
+            validateUrl(uri);
             queue.add(uri);
           } catch (UrlInvalidException e) {
-            log.debug("Not adding {} to the queue", link);
+            log.debug("Not adding {} to the queue", uri);
           }
         });
   }
 
   private void validateUrl(URI uri) throws UrlInvalidException {
     try {
-      String scheme = uri.getScheme();
-
-      if (!(scheme != null && Set.of("http", "https").contains(scheme.toLowerCase()))) {
-        throw new UrlInvalidException("Unexpected protocol");
-      }
+      urlUtils.validateScheme(uri.getScheme());
       if (!isSameDomainAsSeed(uri)) {
         throw new UrlInvalidException("Different domain");
       }
       if (!hasNotBeenVisitedBefore(uri)) {
         throw new UrlInvalidException("Visited before");
       }
-    } catch (URISyntaxException e) {
-      throw new UrlInvalidException("Invalid URL");
-    }
-  }
-
-  private void validateUrl(String url) throws UrlInvalidException {
-    try {
-      URI uri = new URI(url);
-      validateUrl(uri);
     } catch (URISyntaxException e) {
       throw new UrlInvalidException("Invalid URL");
     }
@@ -110,36 +97,11 @@ public class WebCrawler {
   }
 
   private boolean hasNotBeenVisitedBefore(URI uri) throws URISyntaxException {
-    return !visited.contains(getNormalisedURI(uri));
+    return !visited.contains(uri.normalize());
+    // normalize() removed ./ and ../ segments
   }
-
-  private URI getNormalisedURI(URI uri) {
-    return uri.normalize();
-  }
-
-  private URI normalizeUrl(String rawUrl) {
-    try {
-      URI uri = new URI(rawUrl.trim()).normalize();
-
-        return new URI(
-              uri.getScheme() != null ? uri.getScheme().toLowerCase() : "http",
-              uri.getAuthority() != null ? uri.getAuthority().toLowerCase() : null,
-              (uri.getPath() == null || uri.getPath().isEmpty()) ? "/" : uri.getPath(),
-              uri.getQuery(),
-              null // remove fragment
-      );
-    } catch (URISyntaxException e) {
-      return null;
-    }
-  }
-
 
   public Queue<URI> getQueue() {
     return this.queue;
   }
-
-  public void setVisited(Set<URI> visited) {
-    this.visited = visited;
-  }
-
 }

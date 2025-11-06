@@ -26,7 +26,7 @@ public class CrawlerMain {
           args[0]);
     }
     String seedUrl = args[0];
-    log.info("Crawling with seed domain: {}", seedUrl);
+    log.debug("Crawling with seed domain: {}", seedUrl);
       try {
           new WebCrawler(seedUrl).crawl();
       } catch (URISyntaxException | UrlInvalidException e) {

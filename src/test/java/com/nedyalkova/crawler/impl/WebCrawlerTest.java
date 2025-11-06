@@ -27,7 +27,7 @@ class WebCrawlerTest {
     assertEquals(1, webCrawler.getQueue().size());
     URI fromTheQueue = webCrawler.getQueue().peek();
     assertNotNull(fromTheQueue);
-    assertEquals("https://google.com", fromTheQueue.toString());
+    assertEquals("https://google.com/", fromTheQueue.toString());
   }
 
   @Test
