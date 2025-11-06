@@ -37,11 +37,15 @@ public class LinkExtractor {
           continue;
         }
         URI normalized = urlUtils.normalizeUrl(hrefAbsoluteUrl);
+        if (normalized == null) {
+          log.warn("Skipping {} since it could not be normalized", hrefAbsoluteUrl);
+          continue;
+        }
         urlUtils.validateScheme(normalized.getScheme());
-        log.debug("Adding to queue: {}", normalized);
+        log.debug("Adding to list of results: {}", normalized);
         linksOnThisPage.add(normalized);
       } catch (UrlInvalidException | URISyntaxException e) {
-
+        log.warn("Skipping {} since it is invalid", hRef);
       }
     }
     return linksOnThisPage;

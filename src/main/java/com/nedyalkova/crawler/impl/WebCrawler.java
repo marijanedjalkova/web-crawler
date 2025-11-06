@@ -19,10 +19,10 @@ public class WebCrawler {
   public WebCrawler(String seedUrl) throws URISyntaxException, UrlInvalidException {
     log.debug("Creating a WebCrawler with seedUrl: {}", seedUrl);
     URI seedUri = urlUtils.normalizeUrl(seedUrl);
-    this.seedHost = seedUri.getHost();
-    if (StringUtils.isBlank(seedHost)) {
+    if (seedUri == null || StringUtils.isBlank(seedUri.getHost())) {
       throw new URISyntaxException(seedUrl, "Unable to determine host", 0);
     }
+    this.seedHost = seedUri.getHost();
     log.debug("Setting host to {}", this.seedHost);
     validateUrl(seedUri);
     queue.add(seedUri);

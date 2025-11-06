@@ -5,9 +5,12 @@ import org.junit.jupiter.api.Test;
 
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.util.Set;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+
 
 class WebCrawlerTest {
 
@@ -27,7 +30,7 @@ class WebCrawlerTest {
     assertEquals(1, webCrawler.getQueue().size());
     URI fromTheQueue = webCrawler.getQueue().peek();
     assertNotNull(fromTheQueue);
-    assertEquals("https://google.com/", fromTheQueue.toString());
+    assertEquals("https://google.com", fromTheQueue.toString());
   }
 
   @Test
