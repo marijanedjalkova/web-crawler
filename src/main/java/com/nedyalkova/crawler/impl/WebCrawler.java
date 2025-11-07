@@ -16,41 +16,44 @@ import java.util.Set;
 public class WebCrawler {
   private static final Logger log = LoggerFactory.getLogger(WebCrawler.class);
 
-  public WebCrawler(String seedUrl) throws URISyntaxException {
-    log.info("Creating a WebCrawler with seedUrl: {}", seedUrl);
-    this.seedHost = new URI(seedUrl).getHost();
-    if (StringUtils.isBlank(seedHost)) {
+  public WebCrawler(String seedUrl) throws URISyntaxException, UrlInvalidException {
+    log.debug("Creating a WebCrawler with seedUrl: {}", seedUrl);
+    URI seedUri = urlUtils.normalizeUrl(seedUrl);
+    if (seedUri == null || StringUtils.isBlank(seedUri.getHost())) {
       throw new URISyntaxException(seedUrl, "Unable to determine host", 0);
     }
-    log.info("Setting host to {}", this.seedHost);
-    queue.add(seedUrl);
-    log.info("Added the seedUrl to the queue");
+    this.seedHost = seedUri.getHost();
+    log.debug("Setting host to {}", this.seedHost);
+    validateUrl(seedUri);
+    queue.add(seedUri);
+    log.debug("Added the seedUrl to the queue");
   }
 
   private final String seedHost;
 
-  private Set<String> visited = new HashSet<>();
-  private final Queue<String> queue = new LinkedList<>();
+  private final Set<URI> visited = new HashSet<>();
+  private final Queue<URI> queue = new LinkedList<>();
 
   private final HTMLFetcher htmlFetcher = new HTMLFetcher();
   private final LinkExtractor linkExtractor = new LinkExtractor();
+  private final URLUtils urlUtils = new URLUtils();
   int counter = 0;
 
   public void crawl() {
     while (!queue.isEmpty()) {
       log.debug("QUEUE LENGTH: {}, DONE {}", queue.size(), counter);
-      String nextUrl = queue.poll();
+      URI nextUrl = queue.poll();
       counter++;
       crawlUrl(nextUrl);
     }
   }
 
-  private void crawlUrl(String nextUrl) {
+  private void crawlUrl(URI nextUrl) {
     try {
       log.info("CRAWL {}", nextUrl);
       validateUrl(nextUrl);
-      String html = htmlFetcher.fetchHTML(nextUrl);
-      Set<String> linksFromPage = linkExtractor.extractLinks(html, nextUrl);
+      String html = htmlFetcher.fetchHTML(nextUrl.toString());
+      Set<URI> linksFromPage = linkExtractor.extractLinks(html, nextUrl.toString());
       log.debug("Extracted links: {}", linksFromPage);
       addLinksToQueue(linksFromPage);
       visited.add(nextUrl);
@@ -61,26 +64,21 @@ public class WebCrawler {
     }
   }
 
-  private void addLinksToQueue(Set<String> linksFromPage) {
+  private void addLinksToQueue(Set<URI> linksFromPage) {
     linksFromPage.forEach(
-        link -> {
+        uri -> {
           try {
-            validateUrl(link);
-            queue.add(link);
+            validateUrl(uri);
+            queue.add(uri);
           } catch (UrlInvalidException e) {
-            log.debug("Not adding {} to the queue", link);
+            log.debug("Not adding {} to the queue", uri);
           }
         });
   }
 
-  private void validateUrl(String url) throws UrlInvalidException {
+  private void validateUrl(URI uri) throws UrlInvalidException {
     try {
-      URI uri = new URI(url);
-      String scheme = uri.getScheme();
-
-      if (!(scheme != null && Set.of("http", "https").contains(scheme.toLowerCase()))) {
-        throw new UrlInvalidException("Unexpected protocol");
-      }
+      urlUtils.validateScheme(uri.getScheme());
       if (!isSameDomainAsSeed(uri)) {
         throw new UrlInvalidException("Different domain");
       }
@@ -92,29 +90,18 @@ public class WebCrawler {
     }
   }
 
-  private boolean isSameDomainAsSeed(URI uri) {
+  boolean isSameDomainAsSeed(URI uri) {
     String host = uri.getHost();
     return StringUtils.isNotBlank(host)
-        && (host.equalsIgnoreCase(this.seedHost) || host.endsWith("." + this.seedHost));
+        && (host.equalsIgnoreCase(this.seedHost) || host.equals("www." + this.seedHost));
   }
 
   private boolean hasNotBeenVisitedBefore(URI uri) throws URISyntaxException {
-    return !visited.contains(getNormalisedURI(uri).toString());
+    return !visited.contains(uri.normalize());
+    // normalize() removed ./ and ../ segments
   }
 
-  private URI getNormalisedURI(URI uri) {
-    return uri.normalize();
-  }
-
-  public Queue<String> getQueue() {
+  public Queue<URI> getQueue() {
     return this.queue;
-  }
-
-  public void setVisited(Set<String> visited) {
-    this.visited = visited;
-  }
-
-  public Set<String> getVisited() {
-    return visited;
   }
 }
