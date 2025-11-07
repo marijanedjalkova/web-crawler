@@ -29,7 +29,7 @@ public class CrawlerMain {
     String seedUrl = args[0];
     log.debug("Crawling with seed domain: {}", seedUrl);
       try {
-          new ConcurrentWebCrawler(seedUrl).crawl();
+          new ConcurrentWebCrawler(seedUrl, 1000).crawl();
       } catch (URISyntaxException | UrlInvalidException e) {
           log.error("Invalid host: {}", seedUrl);
       }

@@ -22,8 +22,10 @@ public class WebCrawler {
   private final LinkExtractor linkExtractor = new LinkExtractor();
   private final URLUtils urlUtils = new URLUtils();
   private int counter = 0;
+  public final static int DEFAULT_MAX_PAGES = 500;
+  private final int maxPages;
 
-  public WebCrawler(String seedUrl) throws URISyntaxException, UrlInvalidException {
+  public WebCrawler(String seedUrl, int maxPages) throws URISyntaxException, UrlInvalidException {
     log.debug("Creating a WebCrawler with seedUrl: {}", seedUrl);
     URI seedUri = urlUtils.normalizeUrl(seedUrl);
     if (seedUri == null || StringUtils.isBlank(seedUri.getHost())) {
@@ -34,10 +36,15 @@ public class WebCrawler {
     validateUrl(seedUri);
     queue.add(seedUri);
     log.debug("Added the seedUrl to the queue");
+    this.maxPages = maxPages;
+  }
+
+  public WebCrawler(String seedUrl) throws URISyntaxException, UrlInvalidException {
+    this(seedUrl, DEFAULT_MAX_PAGES);
   }
 
   public void crawl() {
-    while (!queue.isEmpty()) {
+    while (!queue.isEmpty() && counter < maxPages) {
       log.debug("QUEUE LENGTH: {}, DONE {}", queue.size(), counter);
       URI nextUrl = queue.poll();
       counter++;
