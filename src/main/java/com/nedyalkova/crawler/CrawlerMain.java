@@ -1,6 +1,7 @@
 package com.nedyalkova.crawler;
 
 import com.nedyalkova.crawler.exception.UrlInvalidException;
+import com.nedyalkova.crawler.impl.ConcurrentWebCrawler;
 import com.nedyalkova.crawler.impl.WebCrawler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -28,7 +29,7 @@ public class CrawlerMain {
     String seedUrl = args[0];
     log.debug("Crawling with seed domain: {}", seedUrl);
       try {
-          new WebCrawler(seedUrl).crawl();
+          new ConcurrentWebCrawler(seedUrl).crawl();
       } catch (URISyntaxException | UrlInvalidException e) {
           log.error("Invalid host: {}", seedUrl);
       }

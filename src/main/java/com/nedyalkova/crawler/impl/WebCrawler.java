@@ -8,13 +8,20 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.util.HashSet;
-import java.util.LinkedList;
 import java.util.Queue;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentLinkedQueue;
 
 public class WebCrawler {
   private static final Logger log = LoggerFactory.getLogger(WebCrawler.class);
+  private final String seedHost;
+  protected final Queue<URI> queue = new ConcurrentLinkedQueue<>();
+  protected final Set<URI> visited = ConcurrentHashMap.newKeySet();
+  private final HTMLFetcher htmlFetcher = new HTMLFetcher();
+  private final LinkExtractor linkExtractor = new LinkExtractor();
+  private final URLUtils urlUtils = new URLUtils();
+  private int counter = 0;
 
   public WebCrawler(String seedUrl) throws URISyntaxException, UrlInvalidException {
     log.debug("Creating a WebCrawler with seedUrl: {}", seedUrl);
@@ -29,16 +36,6 @@ public class WebCrawler {
     log.debug("Added the seedUrl to the queue");
   }
 
-  private final String seedHost;
-
-  private final Set<URI> visited = new HashSet<>();
-  private final Queue<URI> queue = new LinkedList<>();
-
-  private final HTMLFetcher htmlFetcher = new HTMLFetcher();
-  private final LinkExtractor linkExtractor = new LinkExtractor();
-  private final URLUtils urlUtils = new URLUtils();
-  int counter = 0;
-
   public void crawl() {
     while (!queue.isEmpty()) {
       log.debug("QUEUE LENGTH: {}, DONE {}", queue.size(), counter);
@@ -48,7 +45,7 @@ public class WebCrawler {
     }
   }
 
-  private void crawlUrl(URI nextUrl) {
+  void crawlUrl(URI nextUrl) {
     try {
       log.info("CRAWL {}", nextUrl);
       validateUrl(nextUrl);
