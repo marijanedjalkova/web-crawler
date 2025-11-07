@@ -11,7 +11,6 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-
 class WebCrawlerTest {
 
   @Test
@@ -25,7 +24,8 @@ class WebCrawlerTest {
   }
 
   @Test
-  void createCrawler_whenUrlValid_itIsAddedToTheQueue() throws URISyntaxException, UrlInvalidException {
+  void createCrawler_whenUrlValid_itIsAddedToTheQueue()
+      throws URISyntaxException, UrlInvalidException {
     WebCrawler webCrawler = new WebCrawler("https://google.com");
     assertEquals(1, webCrawler.getQueue().size());
     URI fromTheQueue = webCrawler.getQueue().peek();
@@ -34,11 +34,10 @@ class WebCrawlerTest {
   }
 
   @Test
-  void isSameDomainAsSeed_whenDifferentFirstPart_thenFalse() throws UrlInvalidException, URISyntaxException {
+  void isSameDomainAsSeed_whenDifferentFirstPart_thenFalse()
+      throws UrlInvalidException, URISyntaxException {
     WebCrawler crawler = new WebCrawler("https://google.com");
     assertFalse(crawler.isSameDomainAsSeed(new URI("abc.google.com")));
     assertFalse(crawler.isSameDomainAsSeed(new URI("facebook.com")));
   }
-
-
 }
