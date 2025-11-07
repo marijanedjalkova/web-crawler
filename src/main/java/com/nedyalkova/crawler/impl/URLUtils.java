@@ -22,12 +22,10 @@ public class URLUtils {
     if (scheme == null || host == null) {
       return null;
     }
-    host = host.toLowerCase();
-
     int port = getPort(scheme, uri.getPort());
     String normalisedPath = getPath(uri.getPath());
 
-    return new URI(scheme, uri.getUserInfo(), host, port, normalisedPath, uri.getQuery(), null);
+    return new URI(scheme.toLowerCase(), uri.getUserInfo(), host.toLowerCase(), port, normalisedPath, uri.getQuery(), null);
   }
 
   private String getPath(String path) {
